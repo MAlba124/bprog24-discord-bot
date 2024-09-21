@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c99 -DCCORD_SIGINTCATCH
 CFLAGS_DEBUG = $(CFLAGS) -g
 CFLAGS_RELEASE = $(CFLAGS) -O2
-CLINKFLAGS = -ldiscord -lcurl -lpthread
+CLINKFLAGS = -ldiscord -lcurl -lpthread -lm
 EXE_NAME = bprogbot
 
 OBJS = objs/parser.o     \

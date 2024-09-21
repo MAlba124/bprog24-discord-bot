@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "evaluator.h"
+#include "parser.h"
 #include "vector.h"
 
 const char *evaluator_result_to_str(EvaluatorResult er) {
@@ -56,6 +57,42 @@ double evaluate(struct vector_token *tokens, EvaluatorResult *res) {
       }
       const double top_4 = vector_pop_double(&vstack);
       vstack.buf[vstack.len - 1] /= top_4;
+      break;
+    case TT_POW:
+      if (vstack.len < 2) {
+        *res = ER_MISSING_OPERAND;
+        return NAN;
+      }
+      const double top_5 = vector_pop_double(&vstack);
+      vstack.buf[vstack.len - 1] = pow(vstack.buf[vstack.len - 1], top_5);
+      break;
+    case TT_SQRT:
+      if (vstack.len < 1) {
+        *res = ER_MISSING_OPERAND;
+        return NAN;
+      }
+      vstack.buf[vstack.len - 1] = sqrt(vstack.buf[vstack.len - 1]);
+      break;
+    case TT_SIN:
+      if (vstack.len < 1) {
+        *res = ER_MISSING_OPERAND;
+        return NAN;
+      }
+      vstack.buf[vstack.len - 1] = sin(vstack.buf[vstack.len - 1]);
+      break;
+    case TT_COS:
+      if (vstack.len < 1) {
+        *res = ER_MISSING_OPERAND;
+        return NAN;
+      }
+      vstack.buf[vstack.len - 1] = cos(vstack.buf[vstack.len - 1]);
+      break;
+    case TT_TAN:
+      if (vstack.len < 1) {
+        *res = ER_MISSING_OPERAND;
+        return NAN;
+      }
+      vstack.buf[vstack.len - 1] = tan(vstack.buf[vstack.len - 1]);
       break;
     case TT_EOF:
     case TT_EMPTY:

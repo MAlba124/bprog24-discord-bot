@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "parser.h"
 #include "vector.h"
@@ -21,8 +22,12 @@ const char *parse_error_to_str(ParseError pe) {
     return "STR_TO_DOUBLE_CONVERSION";
   case PE_NOT_AN_OPERATOR:
     return "NOT_AN_OPERATOR";
-  case PE_MISSING_OPEN_PAR:
-    return "MISSING_OPEN_PAR";
+  case PE_MISSING_OPEN_PARENTHESES:
+    return "MISSING_OPEN_PARENTHESES:";
+  case PE_UNCLOSED_PARENTHESES:
+    return "UNCLOSED_PARENTHESES";
+  case PE_INVALID_FUNCTION:
+    return "INVALID_FUNCTION";
   }
   return "N/A";
 }
@@ -37,6 +42,13 @@ static int tt_to_precedence(TokenType tt) {
     return 3;
   case TT_DIVIDE:
     return 3;
+  case TT_POW:
+    return 4;
+  case TT_SQRT:
+  case TT_SIN:
+  case TT_COS:
+  case TT_TAN:
+    return 5;
   case TT_EOF:
   case TT_EMPTY:
   case TT_ERROR:
@@ -48,36 +60,50 @@ static int tt_to_precedence(TokenType tt) {
   return 0;
 }
 
-#define RET_TOKEN(__token_name, __tt)                                          \
+struct FunctionTableEntry {
+  char *label;
+  TokenType tt;
+};
+
+const struct FunctionTableEntry functions_table[] = {
+    {.label = "sqrt", .tt = TT_SQRT},
+    {.label = "sin", .tt = TT_SIN},
+    {.label = "cos", .tt = TT_COS},
+    {.label = "tan", .tt = TT_TAN}};
+
+#define RET_TOKEN(__tt)                                                        \
   (*str)++;                                                                    \
   (*error_index)++;                                                            \
   return (Token) { .type = __tt }
 
 static Token next_token(char **str, ParseError *error, size_t *error_index) {
   if (isspace(**str)) {
-    RET_TOKEN(t_empty, TT_EMPTY);
+    RET_TOKEN(TT_EMPTY);
   }
 
   switch (**str) {
   case '\0':
-    RET_TOKEN(t_eof, TT_EOF);
+    RET_TOKEN(TT_EOF);
   case '(':
-    RET_TOKEN(t_op, TT_OPENPAR);
+    RET_TOKEN(TT_OPENPAR);
   case ')':
-    RET_TOKEN(t_cp, TT_CLOSEPAR);
+    RET_TOKEN(TT_CLOSEPAR);
   case '+':
-    RET_TOKEN(t_add, TT_ADD);
+    RET_TOKEN(TT_ADD);
   case '-':
-    RET_TOKEN(t_sub, TT_SUB);
+    RET_TOKEN(TT_SUB);
   case '*':
-    RET_TOKEN(t_mult, TT_MULTIPLY);
+    RET_TOKEN(TT_MULTIPLY);
   case '/':
-    RET_TOKEN(t_div, TT_DIVIDE);
+    RET_TOKEN(TT_DIVIDE);
+  case '^':
+    RET_TOKEN(TT_POW);
   case '0' ... '9':
     struct vector_char numbuf;
     vector_init_char(&numbuf);
     bool has_dot = false;
     while ((**str >= '0' && **str <= '9') || **str == '.') {
+      (*error_index)++;
       if (**str == '.' && has_dot) {
         *error = PE_MULTIPLE_DECIMAL_SPEARATORS;
         return (Token){.type = TT_ERROR};
@@ -85,22 +111,54 @@ static Token next_token(char **str, ParseError *error, size_t *error_index) {
         has_dot = true;
       }
       vector_push_char(&numbuf, **str);
-      (*error_index)++;
       (*str)++;
     }
     vector_push_char(&numbuf, '\0');
     char *endptr;
     double n = strtod(numbuf.buf, &endptr);
-    if (numbuf.buf != endptr) {
-        vector_free_char(&numbuf);
-        *error = PE_STR_TO_DOUBLE_CONVERSION;
-        return (Token){.type = TT_ERROR};
+    if (numbuf.buf == endptr) {
+      vector_free_char(&numbuf);
+      *error = PE_STR_TO_DOUBLE_CONVERSION;
+      return (Token){.type = TT_ERROR};
     }
     vector_free_char(&numbuf);
     return (Token){.type = TT_NUM, .num = n};
+  case 'a' ... 'z':
+    size_t function_start = *error_index;
+    struct vector_char funcbuf;
+    vector_init_char(&funcbuf);
+    while (**str >= 'a' && **str <= 'z') {
+      vector_push_char(&funcbuf, **str);
+      (*error_index)++;
+      (*str)++;
+    }
+
+    if (**str != '(') {
+      *error_index = function_start;
+      *error = PE_INVALID_FUNCTION;
+      return (Token){.type = TT_ERROR};
+    }
+
+    for (size_t ft_i = 0;
+         ft_i < sizeof(functions_table) / sizeof(functions_table[0]); ft_i++) {
+      if (strlen(functions_table[ft_i].label) != funcbuf.len) {
+        continue;
+      }
+      if (strncmp(funcbuf.buf, functions_table[ft_i].label, funcbuf.len) == 0) {
+        vector_free_char(&funcbuf);
+        return (Token){.type = functions_table[ft_i].tt};
+      }
+    }
+
+    vector_free_char(&funcbuf);
+
+    *error_index = function_start;
+    *error = PE_INVALID_FUNCTION;
+    return (Token){.type = TT_ERROR};
   default:
+    (*error_index)++;
     *error = PE_INVALID_LEXEME;
-    return (Token){.type = TT_NUM, .num = TT_ERROR};
+    return (Token){.type = TT_ERROR};
   }
 }
 
@@ -110,6 +168,9 @@ struct vector_token parse_math(char *expr, ParseError *error,
   vector_init_token(&out);
   struct vector_token ops;
   vector_init_token(&ops);
+
+  int open_pars = 0;
+  size_t last_open_par = 0;
 
   while (true) {
     Token tok = next_token(&expr, error, error_index);
@@ -129,24 +190,35 @@ struct vector_token parse_math(char *expr, ParseError *error,
     case TT_NUM:
       vector_push_token(&out, tok);
       break;
+    case TT_SQRT:
+    case TT_SIN:
+    case TT_COS:
+    case TT_TAN:
+      vector_push_token(&ops, tok);
+      break;
     case TT_OPENPAR:
+      if (open_pars == 0) {
+        last_open_par = *error_index;
+      }
+      open_pars++;
       vector_push_token(&ops, tok);
       break;
     case TT_CLOSEPAR:
       while (ops.len > 0 && ops.buf[ops.len - 1].type != TT_OPENPAR) {
         vector_push_token(&out, vector_pop_token(&ops));
       }
-      Token ops_top = vector_pop_token(&ops);
-      if (ops_top.type != TT_OPENPAR) {
+      if (ops.len == 0 || vector_pop_token(&ops).type != TT_OPENPAR) {
         vector_free_token(&ops);
-        *error = PE_MISSING_OPEN_PAR;
+        *error = PE_MISSING_OPEN_PARENTHESES;
         return out;
       }
+      open_pars--;
       break;
     case TT_ADD:
     case TT_SUB:
     case TT_MULTIPLY:
     case TT_DIVIDE:
+    case TT_POW:
       while (ops.len > 0 && ops.buf[ops.len - 1].type != TT_OPENPAR) {
         int op_precedence = tt_to_precedence(ops.buf[ops.len - 1].type);
         if (op_precedence == -1) {
@@ -169,6 +241,13 @@ struct vector_token parse_math(char *expr, ParseError *error,
       vector_push_token(&ops, tok);
       break;
     }
+  }
+
+  if (open_pars > 0) {
+    *error_index = last_open_par;
+    vector_free_token(&ops);
+    *error = PE_UNCLOSED_PARENTHESES;
+    return out;
   }
 
   while (ops.len > 0) {

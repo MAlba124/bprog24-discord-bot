@@ -1,6 +1,8 @@
 #ifndef __H_PARSER
 #define __H_PARSER 1
 
+#include <stdio.h>
+
 typedef enum {
   TT_EOF,
   TT_EMPTY,
@@ -11,7 +13,12 @@ typedef enum {
   TT_ADD,
   TT_SUB,
   TT_MULTIPLY,
-  TT_DIVIDE
+  TT_DIVIDE,
+  TT_POW,
+  TT_SQRT,
+  TT_SIN,
+  TT_COS,
+  TT_TAN
 } TokenType;
 
 typedef enum {
@@ -20,7 +27,9 @@ typedef enum {
   PE_MULTIPLE_DECIMAL_SPEARATORS,
   PE_STR_TO_DOUBLE_CONVERSION,
   PE_NOT_AN_OPERATOR,
-  PE_MISSING_OPEN_PAR
+  PE_MISSING_OPEN_PARENTHESES,
+  PE_UNCLOSED_PARENTHESES,
+  PE_INVALID_FUNCTION
 } ParseError;
 
 typedef struct {

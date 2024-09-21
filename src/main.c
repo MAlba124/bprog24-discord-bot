@@ -41,7 +41,7 @@ void on_calc(struct discord *client, const struct discord_message *event) {
 
     struct vector_char error_format_pointer_str;
     vector_init_char(&error_format_pointer_str);
-    for (size_t i = 0; i < parse_error_index; i++) {
+    for (size_t i = 0; i < parse_error_index - 1; i++) {
       vector_push_char(&error_format_pointer_str, ' ');
     }
     vector_push_char(&error_format_pointer_str, '\0');
@@ -63,7 +63,7 @@ void on_calc(struct discord *client, const struct discord_message *event) {
                       "Failed to evaluate your expression. Error code: `%s`",
                       evaluator_result_to_str(error)) != -1);
     } else {
-      if (res == (int)res) {
+      if (res == (long long)res) {
         assert(asprintf(&res_str, "```%.0f```", res) != -1);
       } else {
         assert(asprintf(&res_str, "```%f```", res) != -1);
