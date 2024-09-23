@@ -6,8 +6,12 @@
 struct Command {
   char *longf;
   char *shortf;
+  char *description;
   void (*callback)(struct discord *client, const struct discord_message *event) ;
 };
+
+#define N_COMMANDS 7
+extern const struct Command commands[N_COMMANDS];
 
 void on_calc(struct discord *client, const struct discord_message *event);
 void on_ping(struct discord *client, const struct discord_message *event);

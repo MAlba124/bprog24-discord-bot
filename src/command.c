@@ -12,6 +12,39 @@
 #include "include/parser.h"
 #include "include/vector.h"
 
+const struct Command commands[N_COMMANDS] = {
+    {.longf = "calc",
+     .shortf = "c",
+     .description =
+         "`<expression>`. Caluclate an expression e.g. `+calc 10 / 5`. "
+         "Supports `+-*/^` and these functions: [`sqrt`, `sin`, `tan`, `cos`]",
+     .callback = &on_calc},
+    {.longf = "ping",
+     .shortf = "p",
+     .description = "Show the bots latency",
+     .callback = &on_ping},
+    {.longf = "plot",
+     .shortf = "pl",
+     .description = "`<expression>`. Plot a function e.g. `+plot x**2` or "
+                    "multiple functions: `+plot log10(pi * x), sin(x)`",
+     .callback = &on_plot},
+    {.longf = "tobin",
+     .shortf = "tb",
+     .description = "`<number>` Convert `<number>` to binary representation",
+     .callback = &on_tobin},
+    {.longf = "tohex",
+     .shortf = "th",
+     .description = "`<number>` Convert `<number>` to hexadecimal representation",
+     .callback = &on_tohex},
+    {.longf = "todec",
+     .shortf = "td",
+     .description = "`<number>` Convert `<number>` to decimal representation",
+     .callback = &on_todec},
+    {.longf = "help",
+     .shortf = "h",
+     .description = "Show this message",
+     .callback = &on_help}};
+
 static void reply_msg(struct discord *client, const struct discord_message *msg,
                       char *content) {
   struct discord_create_message params = {
@@ -112,23 +145,49 @@ void on_plot(struct discord *client, const struct discord_message *event) {
   vector_free_char(&pngbuf);
 }
 
+static void vector_char_push_str(struct vector_char *vec, char *str) {
+  while (*str != '\0') {
+    /* vector_push_char(vec, *str++); */ // TODO: Test
+    vector_push_char(vec, *str);
+    str++;
+  }
+}
+
 void on_help(struct discord *client, const struct discord_message *event) {
+  struct vector_char help_msg;
+  vector_init_char(&help_msg);
+  vector_char_push_str(&help_msg, "**Commands**\n");
+
+  for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+    char *command_help;
+    struct Command cmd = commands[i];
+    assert(asprintf(&command_help, "`+%s` (`+%s`) %s\n", cmd.longf, cmd.shortf, cmd.description) != -1);
+    vector_char_push_str(&help_msg, command_help);
+    free(command_help);
+  }
+
+  vector_push_char(&help_msg, '\0');
+
   struct discord_create_message params = {
-      .content = "**Commands**\n"
-                 "`+calc` (`+c`) `<expression>`. Caluclate an expression e.g. "
-                 "`+calc 10 / 5`. Supports `+-*/^` and these functions: "
-                 "[`sqrt`, `sin`, `tan`, `cos`]\n"
-                 "`+plot` (`+pl`) `<expression>`. Plot a function e.g. `+plot "
-                 "x**2` or multiple functions: `+plot log10(pi * x), sin(x)`\n"
-                 "`+ping` (`+p`) Show the bots latency\n"
-                 "`+tobin` (`+tb`) `<number>` Convert `<number>` to binary "
-                 "representation\n"
-                 "`+tohex` (`+th`) `<number>` Convert `<number>` to "
-                 "hexadecimal representation\n"
-                 "`+todec` (`+td`) `<number>` Convert `<number>` to decimal "
-                 "representation\n"
-                 "`+help` (`+h`) Show this message\n"};
+    .content = help_msg.buf,
+      /* .content = "**Commands**\n" */
+      /*            "`+calc` (`+c`) `<expression>`. Caluclate an expression e.g. " */
+      /*            "`+calc 10 / 5`. Supports `+-*\/^` and these functions: " */
+      /*            "[`sqrt`, `sin`, `tan`, `cos`]\n" */
+      /*            "`+plot` (`+pl`) `<expression>`. Plot a function e.g. `+plot " */
+      /*            "x**2` or multiple functions: `+plot log10(pi * x), sin(x)`\n" */
+      /*            "`+ping` (`+p`) Show the bots latency\n" */
+      /*            "`+tobin` (`+tb`) `<number>` Convert `<number>` to binary " */
+      /*            "representation\n" */
+      /*            "`+tohex` (`+th`) `<number>` Convert `<number>` to " */
+      /*            "hexadecimal representation\n" */
+      /*            "`+todec` (`+td`) `<number>` Convert `<number>` to decimal " */
+      /*            "representation\n" */
+      /*            "`+help` (`+h`) Show this message\n"}; */
+  };
   discord_create_message(client, event->channel_id, &params, NULL);
+
+  vector_free_char(&help_msg);
 }
 
 void on_tobin(struct discord *client, const struct discord_message *event) {

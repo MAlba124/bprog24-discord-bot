@@ -9,16 +9,6 @@
 
 #include "include/command.h"
 
-const struct Command commands[] = {
-    {.longf = "calc", .shortf = "c", .callback = &on_calc},
-    {.longf = "ping", .shortf = "p", .callback = &on_ping},
-    {.longf = "plot", .shortf = "pl", .callback = &on_plot},
-    {.longf = "tobin", .shortf = "tb", .callback = &on_tobin},
-    {.longf = "tohex", .shortf = "th", .callback = &on_tohex},
-    {.longf = "todec", .shortf = "td", .callback = &on_todec},
-    {.longf = "help", .shortf = "h", .callback = &on_help}
-};
-
 void on_ready(struct discord *client, const struct discord_ready *event) {
   (void)client;
   log_info("Logged in as %s", event->user->username);
