@@ -12,17 +12,22 @@
 #include "include/parser.h"
 #include "include/vector.h"
 
+static void reply_msg(struct discord *client, const struct discord_message *msg,
+                      char *content) {
+  struct discord_create_message params = {
+      .content = content,
+      .allowed_mentions =
+          &(struct discord_allowed_mention){.replied_user = false},
+      .message_reference =
+          &(struct discord_message_reference){.message_id = msg->id,
+                                              .channel_id = msg->channel_id,
+                                              .guild_id = msg->guild_id}};
+  discord_create_message(client, msg->channel_id, &params, NULL);
+}
+
 void on_calc(struct discord *client, const struct discord_message *event) {
   if (strlen(event->content) == 0) {
-    struct discord_create_message params = {
-        .content = "You're missing an expression!",
-        .allowed_mentions =
-            &(struct discord_allowed_mention){.replied_user = false},
-        .message_reference =
-            &(struct discord_message_reference){.message_id = event->id,
-                                                .channel_id = event->channel_id,
-                                                .guild_id = event->guild_id}};
-    discord_create_message(client, event->channel_id, &params, NULL);
+    reply_msg(client, event, "You're missing and expression!");
     return;
   }
 
@@ -67,15 +72,7 @@ void on_calc(struct discord *client, const struct discord_message *event) {
     }
   }
 
-  struct discord_create_message params = {
-      .content = res_str,
-      .allowed_mentions =
-          &(struct discord_allowed_mention){.replied_user = false},
-      .message_reference =
-          &(struct discord_message_reference){.message_id = event->id,
-                                              .channel_id = event->channel_id,
-                                              .guild_id = event->guild_id}};
-  discord_create_message(client, event->channel_id, &params, NULL);
+  reply_msg(client, event, res_str);
   free(res_str);
 }
 
@@ -92,15 +89,7 @@ void on_plot(struct discord *client, const struct discord_message *event) {
   int exit_status;
   struct vector_char pngbuf = gnuplot_plot(event->content, &exit_status);
   if (exit_status == EXIT_FAILURE || pngbuf.len == 0) {
-    struct discord_create_message params = {
-        .content = "Something went wrong ploting your expression :(",
-        .allowed_mentions =
-            &(struct discord_allowed_mention){.replied_user = false},
-        .message_reference =
-            &(struct discord_message_reference){.message_id = event->id,
-                                                .channel_id = event->channel_id,
-                                                .guild_id = event->guild_id}};
-    discord_create_message(client, event->channel_id, &params, NULL);
+    reply_msg(client, event, "Something went wrong ploting your expression :(");
     vector_free_char(&pngbuf);
     return;
   }
@@ -132,9 +121,12 @@ void on_help(struct discord *client, const struct discord_message *event) {
                  "`+plot` (`+pl`) `<expression>`. Plot a function e.g. `+plot "
                  "x**2` or multiple functions: `+plot log10(pi * x), sin(x)`\n"
                  "`+ping` (`+p`) Show the bots latency\n"
-                 "`+tobin` (`+tb`) `<number>` Convert `<number>` to binary representation\n"
-                 "`+tohex` (`+th`) `<number>` Convert `<number>` to hexadecimal representation\n"
-                 "`+todec` (`+td`) `<number>` Convert `<number>` to decimal representation\n"
+                 "`+tobin` (`+tb`) `<number>` Convert `<number>` to binary "
+                 "representation\n"
+                 "`+tohex` (`+th`) `<number>` Convert `<number>` to "
+                 "hexadecimal representation\n"
+                 "`+todec` (`+td`) `<number>` Convert `<number>` to decimal "
+                 "representation\n"
                  "`+help` (`+h`) Show this message\n"};
   discord_create_message(client, event->channel_id, &params, NULL);
 }
@@ -146,15 +138,7 @@ void on_tobin(struct discord *client, const struct discord_message *event) {
     char *res_str = NULL;
     assert(asprintf(&res_str, "Failed to covert! Error code: `%s`",
                     conversion_error_to_str(cerr)) != -1);
-    struct discord_create_message params = {
-        .content = res_str,
-        .allowed_mentions =
-            &(struct discord_allowed_mention){.replied_user = false},
-        .message_reference =
-            &(struct discord_message_reference){.message_id = event->id,
-                                                .channel_id = event->channel_id,
-                                                .guild_id = event->guild_id}};
-    discord_create_message(client, event->channel_id, &params, NULL);
+    reply_msg(client, event, res_str);
     free(res_str);
     return;
   }
@@ -164,15 +148,7 @@ void on_tobin(struct discord *client, const struct discord_message *event) {
   convert_to_bin(num, &res_str);
   char *bin_str = NULL;
   assert(asprintf(&bin_str, "`%s`", res_str.buf) != -1);
-  struct discord_create_message params = {
-      .content = bin_str,
-      .allowed_mentions =
-          &(struct discord_allowed_mention){.replied_user = false},
-      .message_reference =
-          &(struct discord_message_reference){.message_id = event->id,
-                                              .channel_id = event->channel_id,
-                                              .guild_id = event->guild_id}};
-  discord_create_message(client, event->channel_id, &params, NULL);
+  reply_msg(client, event, bin_str);
 
   vector_free_char(&res_str);
   free(bin_str);
@@ -203,15 +179,7 @@ void on_tohex(struct discord *client, const struct discord_message *event) {
   convert_to_hex(num, &res_str);
   char *hex_str = NULL;
   assert(asprintf(&hex_str, "`%s`", res_str.buf) != -1);
-  struct discord_create_message params = {
-      .content = hex_str,
-      .allowed_mentions =
-          &(struct discord_allowed_mention){.replied_user = false},
-      .message_reference =
-          &(struct discord_message_reference){.message_id = event->id,
-                                              .channel_id = event->channel_id,
-                                              .guild_id = event->guild_id}};
-  discord_create_message(client, event->channel_id, &params, NULL);
+  reply_msg(client, event, hex_str);
 
   vector_free_char(&res_str);
   free(hex_str);
@@ -224,30 +192,14 @@ void on_todec(struct discord *client, const struct discord_message *event) {
     char *res_str = NULL;
     assert(asprintf(&res_str, "Failed to covert! Error code: `%s`",
                     conversion_error_to_str(cerr)) != -1);
-    struct discord_create_message params = {
-        .content = res_str,
-        .allowed_mentions =
-            &(struct discord_allowed_mention){.replied_user = false},
-        .message_reference =
-            &(struct discord_message_reference){.message_id = event->id,
-                                                .channel_id = event->channel_id,
-                                                .guild_id = event->guild_id}};
-    discord_create_message(client, event->channel_id, &params, NULL);
+    reply_msg(client, event, res_str);
     free(res_str);
     return;
   }
 
   char *dec_str = NULL;
   assert(asprintf(&dec_str, "`%lld`", num) != -1);
-  struct discord_create_message params = {
-      .content = dec_str,
-      .allowed_mentions =
-          &(struct discord_allowed_mention){.replied_user = false},
-      .message_reference =
-          &(struct discord_message_reference){.message_id = event->id,
-                                              .channel_id = event->channel_id,
-                                              .guild_id = event->guild_id}};
-  discord_create_message(client, event->channel_id, &params, NULL);
+  reply_msg(client, event, dec_str);
 
   free(dec_str);
 }
