@@ -161,15 +161,7 @@ void on_tohex(struct discord *client, const struct discord_message *event) {
     char *res_str = NULL;
     assert(asprintf(&res_str, "Failed to covert! Error code: `%s`",
                     conversion_error_to_str(cerr)) != -1);
-    struct discord_create_message params = {
-        .content = res_str,
-        .allowed_mentions =
-            &(struct discord_allowed_mention){.replied_user = false},
-        .message_reference =
-            &(struct discord_message_reference){.message_id = event->id,
-                                                .channel_id = event->channel_id,
-                                                .guild_id = event->guild_id}};
-    discord_create_message(client, event->channel_id, &params, NULL);
+    reply_msg(client, event, res_str);
     free(res_str);
     return;
   }
