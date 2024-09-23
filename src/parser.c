@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "parser.h"
-#include "vector.h"
+#include "include/parser.h"
+#include "include/vector.h"
 
 static void unreachable() { assert("UNREACHABLE" == NULL); }
 

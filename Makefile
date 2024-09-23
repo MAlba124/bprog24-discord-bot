@@ -5,9 +5,12 @@ CFLAGS_RELEASE = $(CFLAGS) -O2
 CLINKFLAGS = -ldiscord -lcurl -lpthread -lm
 EXE_NAME = bprogbot
 
-OBJS = objs/parser.o     \
-	objs/mem.o       \
-	objs/evaluator.o \
+OBJS = objs/parser.o        \
+	objs/mem.o          \
+	objs/evaluator.o    \
+	objs/command.o      \
+	objs/gnuplot.o      \
+	objs/conversion.o   \
 	objs/vector.o
 
 # TODO: change cflags to release when needed

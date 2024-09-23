@@ -1,4 +1,3 @@
-/* #include "mem.h" */
 #include <stdlib.h>
 #include <stdint.h>
 #include <concord/log.h>

@@ -1,8 +1,8 @@
 #include <math.h>
 
-#include "evaluator.h"
-#include "parser.h"
-#include "vector.h"
+#include "include/evaluator.h"
+#include "include/parser.h"
+#include "include/vector.h"
 
 const char *evaluator_result_to_str(EvaluatorResult er) {
   switch (er) {

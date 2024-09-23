@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "vector.h"
+#include "include/vector.h"
 
 VECTOR_HEADER_DEF(double, double);
 VECTOR_FUNC_DEF(double, double);

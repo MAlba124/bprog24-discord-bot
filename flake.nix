@@ -17,6 +17,7 @@
             binutils
             valgrind
             clang-tools
+            gnuplot
           ];
           buildInputs = with pkgs; [
             concord
