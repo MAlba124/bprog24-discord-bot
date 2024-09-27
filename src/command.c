@@ -40,6 +40,10 @@ const struct Command commands[N_COMMANDS] = {
      .shortf = "td",
      .description = "`<number>` Convert `<number>` to decimal representation",
      .callback = &on_todec},
+    {.longf = "why",
+     .shortf = "w",
+     .description = "Describe why something is the way it is",
+     .callback = &on_why},
     {.longf = "help",
      .shortf = "h",
      .description = "Show this message",
@@ -170,20 +174,6 @@ void on_help(struct discord *client, const struct discord_message *event) {
 
   struct discord_create_message params = {
     .content = help_msg.buf,
-      /* .content = "**Commands**\n" */
-      /*            "`+calc` (`+c`) `<expression>`. Caluclate an expression e.g. " */
-      /*            "`+calc 10 / 5`. Supports `+-*\/^` and these functions: " */
-      /*            "[`sqrt`, `sin`, `tan`, `cos`]\n" */
-      /*            "`+plot` (`+pl`) `<expression>`. Plot a function e.g. `+plot " */
-      /*            "x**2` or multiple functions: `+plot log10(pi * x), sin(x)`\n" */
-      /*            "`+ping` (`+p`) Show the bots latency\n" */
-      /*            "`+tobin` (`+tb`) `<number>` Convert `<number>` to binary " */
-      /*            "representation\n" */
-      /*            "`+tohex` (`+th`) `<number>` Convert `<number>` to " */
-      /*            "hexadecimal representation\n" */
-      /*            "`+todec` (`+td`) `<number>` Convert `<number>` to decimal " */
-      /*            "representation\n" */
-      /*            "`+help` (`+h`) Show this message\n"}; */
   };
   discord_create_message(client, event->channel_id, &params, NULL);
 
@@ -253,4 +243,8 @@ void on_todec(struct discord *client, const struct discord_message *event) {
   reply_msg(client, event, dec_str);
 
   free(dec_str);
+}
+
+void on_why(struct discord *client, const struct discord_message *event) {
+  reply_msg(client, event, "¯\\_(ツ)_/¯");
 }
