@@ -1,0 +1,17 @@
+{
+  "logging": {
+    "level": "debug",
+    "filename": "bot.log",
+    "quiet": false,
+    "overwrite": true,
+    "use_color": false,
+    "disable_modules": ["WEBSOCKETS", "USER_AGENT", "DISCORD_REFCOUNT", "DISCORD_RATELIMIT", "DISCORD_GATEWAY"]
+  },
+  "discord": {
+    "token": "",
+    "default_prefix": {
+      "enable": true,
+      "prefix": "+"
+    }
+  }
+}
